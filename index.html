@@ -40,6 +40,20 @@
     }
   </script>
   <style>
+    /* Safe Area & Mobile Ergonomics */
+    .safe-pb {
+      padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+    }
+    .safe-pt {
+      padding-top: env(safe-area-inset-top, 0px);
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
     /* Custom scrollbar */
     ::-webkit-scrollbar {
       width: 6px;
@@ -114,110 +128,116 @@
   </header>
 
   <!-- Main Container -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+  <main class="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-3.5 sm:py-6 space-y-4 sm:space-y-6 pb-28 md:pb-12">
 
-    <!-- KPI Summary Cards -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+    <!-- KPI Summary Cards (Mobile-First 2x2 on phones, 4-col on desktop) -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
       <!-- Total Market Value -->
-      <div class="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden">
+      <div class="bg-white dark:bg-slate-800 p-3 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden flex flex-col justify-between">
         <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1">
-          <span class="text-xs sm:text-sm font-medium">總資產市值</span>
-          <span class="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
-            <i data-lucide="dollar-sign" class="w-4 h-4"></i>
+          <span class="text-[11px] sm:text-sm font-medium">總資產市值</span>
+          <span class="p-1 sm:p-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+            <i data-lucide="dollar-sign" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
           </span>
         </div>
-        <div class="text-xl sm:text-2xl lg:text-3xl font-extrabold text-slate-900 dark:text-white" id="kpi-total-value">NT$ 0</div>
-        <div class="mt-1 flex items-center text-xs text-slate-500 dark:text-slate-400">
+        <div class="text-lg sm:text-2xl lg:text-3xl font-extrabold text-slate-900 dark:text-white truncate" id="kpi-total-value">NT$ 0</div>
+        <div class="mt-1 flex items-center text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 truncate">
           總成本 <span class="ml-1 font-semibold text-slate-700 dark:text-slate-300" id="kpi-total-cost">NT$ 0</span>
         </div>
       </div>
 
       <!-- Unrealized Profit / Loss -->
-      <div class="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden">
+      <div class="bg-white dark:bg-slate-800 p-3 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden flex flex-col justify-between">
         <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1">
-          <span class="text-xs sm:text-sm font-medium">未實現損益</span>
-          <span class="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
-            <i data-lucide="trending-up" class="w-4 h-4"></i>
+          <span class="text-[11px] sm:text-sm font-medium">未實現損益</span>
+          <span class="p-1 sm:p-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+            <i data-lucide="trending-up" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
           </span>
         </div>
-        <div class="text-xl sm:text-2xl lg:text-3xl font-extrabold" id="kpi-unrealized-pnl">NT$ 0</div>
-        <div class="mt-1 flex items-center text-xs font-medium" id="kpi-pnl-rate-container">
+        <div class="text-lg sm:text-2xl lg:text-3xl font-extrabold truncate" id="kpi-unrealized-pnl">NT$ 0</div>
+        <div class="mt-1 flex items-center text-[10px] sm:text-xs font-medium truncate" id="kpi-pnl-rate-container">
           報酬率 <span class="ml-1 font-bold" id="kpi-pnl-rate">0.00%</span>
         </div>
       </div>
 
       <!-- In Account vs Lent Out Value -->
-      <div class="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden">
+      <div class="bg-white dark:bg-slate-800 p-3 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden flex flex-col justify-between">
         <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1">
-          <span class="text-xs sm:text-sm font-medium">出借中市值</span>
-          <span class="p-1.5 rounded-lg bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
-            <i data-lucide="repeat" class="w-4 h-4"></i>
+          <span class="text-[11px] sm:text-sm font-medium">出借中市值</span>
+          <span class="p-1 sm:p-1.5 rounded-lg bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
+            <i data-lucide="repeat" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
           </span>
         </div>
-        <div class="text-xl sm:text-2xl lg:text-3xl font-extrabold text-purple-600 dark:text-purple-400" id="kpi-lent-value">NT$ 0</div>
-        <div class="mt-1 flex items-center text-xs text-slate-500 dark:text-slate-400">
-          在庫市值 <span class="ml-1 font-semibold text-slate-700 dark:text-slate-300" id="kpi-in-account-value">NT$ 0</span>
+        <div class="text-lg sm:text-2xl lg:text-3xl font-extrabold text-purple-600 dark:text-purple-400 truncate" id="kpi-lent-value">NT$ 0</div>
+        <div class="mt-1 flex items-center text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 truncate">
+          在庫 <span class="ml-1 font-semibold text-slate-700 dark:text-slate-300" id="kpi-in-account-value">NT$ 0</span>
         </div>
       </div>
 
       <!-- Cumulative Lending Income -->
-      <div class="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden">
+      <div class="bg-white dark:bg-slate-800 p-3 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden flex flex-col justify-between">
         <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1">
-          <span class="text-xs sm:text-sm font-medium">累計借券被動收入</span>
-          <span class="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
-            <i data-lucide="piggy-bank" class="w-4 h-4"></i>
+          <span class="text-[11px] sm:text-sm font-medium">借券被動收益</span>
+          <span class="p-1 sm:p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
+            <i data-lucide="piggy-bank" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
           </span>
         </div>
-        <div class="text-xl sm:text-2xl lg:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400" id="kpi-lending-income">NT$ 0</div>
-        <div class="mt-1 flex items-center text-xs text-slate-500 dark:text-slate-400">
-          進行中出借 <span class="ml-1 font-semibold text-slate-700 dark:text-slate-300" id="kpi-active-lent-count">0 筆</span>
+        <div class="text-lg sm:text-2xl lg:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 truncate" id="kpi-lending-income">NT$ 0</div>
+        <div class="mt-1 flex items-center text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 truncate">
+          進行中 <span class="ml-1 font-semibold text-slate-700 dark:text-slate-300" id="kpi-active-lent-count">0 筆</span>
         </div>
       </div>
     </div>
 
-    <!-- Action Action Bar -->
-    <div class="bg-white dark:bg-slate-800 p-3 sm:p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-wrap items-center justify-between gap-3">
-      <div class="flex flex-wrap items-center gap-2">
+    <!-- Action Bar (Touch-friendly on mobile) -->
+    <div class="bg-white dark:bg-slate-800 p-2.5 sm:p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+      <div class="grid grid-cols-4 sm:flex sm:flex-wrap items-center gap-1.5 sm:gap-2">
         <!-- Buy Button -->
-        <button onclick="app.openBuyModal()" class="inline-flex items-center space-x-1.5 px-3.5 py-2 text-sm font-semibold rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition active:scale-95">
-          <i data-lucide="plus-circle" class="w-4 h-4"></i>
-          <span>買進股票</span>
+        <button onclick="app.openBuyModal()" class="inline-flex items-center justify-center space-x-1 sm:space-x-1.5 px-2.5 sm:px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition active:scale-95">
+          <i data-lucide="plus-circle" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
+          <span>買進</span>
         </button>
 
         <!-- Sell Button -->
-        <button onclick="app.openSellModal()" class="inline-flex items-center space-x-1.5 px-3.5 py-2 text-sm font-semibold rounded-xl bg-slate-800 hover:bg-slate-900 text-white dark:bg-slate-700 dark:hover:bg-slate-600 shadow-sm transition active:scale-95">
-          <i data-lucide="minus-circle" class="w-4 h-4"></i>
-          <span>賣出股票</span>
+        <button onclick="app.openSellModal()" class="inline-flex items-center justify-center space-x-1 sm:space-x-1.5 px-2.5 sm:px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-xl bg-slate-800 hover:bg-slate-900 text-white dark:bg-slate-700 dark:hover:bg-slate-600 shadow-sm transition active:scale-95">
+          <i data-lucide="minus-circle" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
+          <span>賣出</span>
         </button>
 
         <!-- Lend Button -->
-        <button onclick="app.openLendModal()" class="inline-flex items-center space-x-1.5 px-3.5 py-2 text-sm font-semibold rounded-xl bg-purple-600 hover:bg-purple-700 text-white shadow-sm transition active:scale-95">
-          <i data-lucide="repeat" class="w-4 h-4"></i>
-          <span>登記出借</span>
+        <button onclick="app.openLendModal()" class="inline-flex items-center justify-center space-x-1 sm:space-x-1.5 px-2.5 sm:px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-xl bg-purple-600 hover:bg-purple-700 text-white shadow-sm transition active:scale-95">
+          <i data-lucide="repeat" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
+          <span>出借</span>
         </button>
 
         <!-- Recall Button -->
-        <button onclick="app.openRecallModal()" class="inline-flex items-center space-x-1.5 px-3.5 py-2 text-sm font-semibold rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/50 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 transition active:scale-95">
-          <i data-lucide="arrow-down-left" class="w-4 h-4"></i>
-          <span>召回 / 還券</span>
+        <button onclick="app.openRecallModal()" class="inline-flex items-center justify-center space-x-1 sm:space-x-1.5 px-2.5 sm:px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/50 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 transition active:scale-95">
+          <i data-lucide="arrow-down-left" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
+          <span>召回</span>
         </button>
       </div>
 
-      <div class="flex items-center gap-2">
+      <div class="flex items-center justify-end gap-1.5 sm:gap-2">
         <!-- Manage Accounts -->
-        <button onclick="app.openAccountsModal()" class="inline-flex items-center space-x-1.5 px-3 py-2 text-xs sm:text-sm font-medium rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition">
-          <i data-lucide="building-2" class="w-4 h-4 text-slate-500"></i>
+        <button onclick="app.openAccountsModal()" class="flex-1 sm:flex-none inline-flex items-center justify-center space-x-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs font-medium rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+          <i data-lucide="building-2" class="w-3.5 h-3.5 text-slate-500"></i>
           <span>券商管理</span>
         </button>
 
         <!-- Load Sample Data -->
-        <button id="btn-load-sample" onclick="app.loadSampleData()" class="inline-flex items-center space-x-1 px-2.5 py-2 text-xs font-medium rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800 transition" title="載入範例持股與借券">
+        <button id="btn-load-sample" onclick="app.loadSampleData()" class="flex-1 sm:flex-none inline-flex items-center justify-center space-x-1 px-2.5 py-1.5 sm:py-2 text-xs font-medium rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800 transition" title="載入範例持股與借券">
           <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
           <span class="hidden sm:inline">載入範例</span>
+          <span class="sm:hidden">範例</span>
         </button>
 
         <!-- Clear All Data Button -->
-        <button onclick="app.clearAllData()" class="inline-flex items-center space-x-1 px-2.5 py-2 text-xs font-medium rounded-xl bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-400 border border-red-200 dark:border-red-900 transition" title="清空所有持股與交易資料，變成全新空白帳本">
+        <button onclick="app.clearAllData()" class="flex-1 sm:flex-none inline-flex items-center justify-center space-x-1 px-2.5 py-1.5 sm:py-2 text-xs font-medium rounded-xl bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-400 border border-red-200 dark:border-red-900 transition" title="清空所有持股與交易資料，變成全新空白帳本">
+          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          <span>清空</span>
+        </button>
+      </div>
+    </div>
           <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
           <span>清空資料</span>
         </button>
@@ -393,8 +413,8 @@
   <!-- ==================== MODALS ==================== -->
 
   <!-- 1. BUY MODAL -->
-  <div id="modal-buy" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden transform transition-all">
+  <div id="modal-buy" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden max-h-[92vh] flex flex-col transform transition-all">
       <div class="p-5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-blue-50/50 dark:bg-blue-950/20">
         <div class="flex items-center space-x-2">
           <span class="p-2 bg-blue-600 text-white rounded-lg"><i data-lucide="plus" class="w-4 h-4"></i></span>
@@ -475,8 +495,8 @@
   </div>
 
   <!-- 2. SELL MODAL -->
-  <div id="modal-sell" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden transform transition-all">
+  <div id="modal-sell" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden max-h-[92vh] flex flex-col transform transition-all">
       <div class="p-5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-slate-100 dark:bg-slate-700/40">
         <div class="flex items-center space-x-2">
           <span class="p-2 bg-slate-800 text-white rounded-lg"><i data-lucide="minus" class="w-4 h-4"></i></span>
@@ -555,8 +575,8 @@
   </div>
 
   <!-- 3. LEND MODAL (出借股票) -->
-  <div id="modal-lend" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden transform transition-all">
+  <div id="modal-lend" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden max-h-[92vh] flex flex-col transform transition-all">
       <div class="p-5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-purple-50/50 dark:bg-purple-950/20">
         <div class="flex items-center space-x-2">
           <span class="p-2 bg-purple-600 text-white rounded-lg"><i data-lucide="repeat" class="w-4 h-4"></i></span>
@@ -619,8 +639,8 @@
   </div>
 
   <!-- 4. RECALL / RETURN MODAL (召回 / 還券) -->
-  <div id="modal-recall" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden transform transition-all">
+  <div id="modal-recall" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden max-h-[92vh] flex flex-col transform transition-all">
       <div class="p-5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-indigo-50/50 dark:bg-indigo-950/20">
         <div class="flex items-center space-x-2">
           <span class="p-2 bg-indigo-600 text-white rounded-lg"><i data-lucide="arrow-down-left" class="w-4 h-4"></i></span>
@@ -673,8 +693,8 @@
   </div>
 
   <!-- 5. BROKERAGE ACCOUNTS MODAL -->
-  <div id="modal-accounts" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden transform transition-all">
+  <div id="modal-accounts" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden max-h-[92vh] flex flex-col transform transition-all">
       <div class="p-5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
         <h3 class="font-bold text-base text-slate-900 dark:text-white flex items-center space-x-2">
           <i data-lucide="building-2" class="w-5 h-5 text-blue-600"></i>
@@ -714,8 +734,8 @@
   </div>
 
   <!-- 6. EDIT PRICE MODAL (快速修改單一股票市價) -->
-  <div id="modal-edit-price" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 p-5 space-y-4">
+  <div id="modal-edit-price" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-t-3xl sm:rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 p-5 space-y-4 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between">
         <h3 class="font-bold text-sm text-slate-900 dark:text-white flex items-center space-x-2">
           <i data-lucide="edit-3" class="w-4 h-4 text-blue-600"></i>
@@ -743,8 +763,8 @@
   </div>
 
   <!-- 7. SETTINGS & BACKUP MODAL -->
-  <div id="modal-settings" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-slate-800 w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+  <div id="modal-settings" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white dark:bg-slate-800 w-full max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden max-h-[92vh] flex flex-col">
       <div class="p-5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
         <h3 class="font-bold text-base text-slate-900 dark:text-white flex items-center space-x-2">
           <i data-lucide="hard-drive" class="w-5 h-5 text-indigo-600"></i>
@@ -826,10 +846,38 @@
     </div>
   </div>
 
+  
+  <!-- Mobile Fixed Bottom Navigation Bar (Thumb-friendly App Navigation) -->
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-700 shadow-xl px-2 py-1 safe-pb flex items-center justify-around">
+    <button onclick="app.switchTab('tab-by-stock')" id="mob-nav-stock" class="flex flex-col items-center justify-center flex-1 py-1 text-blue-600 dark:text-blue-400 font-bold transition active:scale-90">
+      <i data-lucide="pie-chart" class="w-5 h-5 mb-0.5"></i>
+      <span class="text-[10px]">個股彙整</span>
+    </button>
+    <button onclick="app.switchTab('tab-by-account')" id="mob-nav-account" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-500 dark:text-slate-400 transition active:scale-90">
+      <i data-lucide="landmark" class="w-5 h-5 mb-0.5"></i>
+      <span class="text-[10px]">券商帳戶</span>
+    </button>
+    
+    <!-- Primary Quick Action: Big Buy Button in Center -->
+    <button onclick="app.openBuyModal()" class="flex flex-col items-center justify-center -mt-5 mx-1 px-3.5 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/40 ring-4 ring-white dark:ring-slate-800 transition active:scale-90" title="快速買進">
+      <i data-lucide="plus" class="w-6 h-6"></i>
+      <span class="text-[9px] font-bold">買進</span>
+    </button>
+
+    <button onclick="app.switchTab('tab-lending')" id="mob-nav-lending" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-500 dark:text-slate-400 transition active:scale-90">
+      <i data-lucide="repeat" class="w-5 h-5 mb-0.5"></i>
+      <span class="text-[10px]">借券收益</span>
+    </button>
+    <button onclick="app.openSettingsModal()" id="mob-nav-settings" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-500 dark:text-slate-400 transition active:scale-90">
+      <i data-lucide="settings" class="w-5 h-5 mb-0.5"></i>
+      <span class="text-[10px]">備份設定</span>
+    </button>
+  </nav>
+
   <!-- Full Taiwan Stocks & ETF Database (2,397 securities) -->
-  <script src="tw_stocks.js?v=20261030_v4"></script>
+  <script src="tw_stocks.js?v=20261030_v5"></script>
   <!-- Main JavaScript Logic -->
-  <script src="app.js?v=20261030_v4"></script>
+  <script src="app.js?v=20261030_v5"></script>
   <script>
     // Initialize Lucide icons on page load
     lucide.createIcons();
@@ -837,7 +885,7 @@
     // Register Service Worker for PWA (Network-First)
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js?v=20261030_v4').then(reg => {
+        navigator.serviceWorker.register('./sw.js?v=20261030_v5').then(reg => {
           if (reg && reg.update) reg.update();
         }).catch(err => {
           console.log('SW registration skipped:', err);
