@@ -73,8 +73,26 @@ class StockApp {
     this.loadData();
     this.applySettings();
     this.setupEventListeners();
+    this.initStocksDatalist();
     this.initFirebase();
     this.render();
+  }
+
+  // 自動填入全台股與ETF datalist (2,397 檔)
+  initStocksDatalist() {
+    const datalist = document.getElementById('stocks-datalist');
+    if (!datalist) return;
+    const db = window.ALL_TW_STOCKS || STOCK_DICTIONARY;
+    const fragment = document.createDocumentFragment();
+
+    Object.entries(db).forEach(([code, item]) => {
+      const opt = document.createElement('option');
+      opt.value = code;
+      opt.label = `${code} ${item.name} (${item.market || (item.isETF ? 'ETF' : '台股')}) - $${item.price}`;
+      fragment.appendChild(opt);
+    });
+    datalist.innerHTML = '';
+    datalist.appendChild(fragment);
   }
 
   // ==================== STORAGE & PERSISTENCE ====================
@@ -1153,6 +1171,11 @@ class StockApp {
     document.getElementById('buy-symbol').value = '';
     document.getElementById('buy-name').value = '';
     document.getElementById('buy-notes').value = '';
+    const fb = document.getElementById('buy-symbol-feedback');
+    if (fb) {
+      fb.classList.add('hidden');
+      fb.innerHTML = '';
+    }
     this.calcBuyTotal();
     this.openModal('modal-buy');
   }
@@ -1173,16 +1196,68 @@ class StockApp {
 
   onSymbolInput(val, mode) {
     const symbol = val.trim().toUpperCase();
-    if (STOCK_DICTIONARY[symbol]) {
-      const stock = STOCK_DICTIONARY[symbol];
+    const feedbackEl = document.getElementById('buy-symbol-feedback');
+    const db = window.ALL_TW_STOCKS || STOCK_DICTIONARY;
+    const stock = db[symbol];
+
+    if (stock) {
       if (mode === 'buy') {
         document.getElementById('buy-name').value = stock.name;
-        if (!document.getElementById('buy-price').value) {
-          const cachedPrice = this.data.prices[symbol]?.price || stock.defaultPrice;
-          document.getElementById('buy-price').value = cachedPrice;
+        if (stock.price > 0) {
+          document.getElementById('buy-price').value = stock.price;
+        }
+        if (feedbackEl) {
+          feedbackEl.innerHTML = `
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-emerald-700 dark:text-emerald-300">
+                ✅ 已辨識：${this.escapeHtml(stock.name)} <span class="text-xs px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/60 ml-1 font-mono">${stock.market || (stock.isETF ? 'ETF' : '台股')}</span>
+              </span>
+              <span class="font-mono font-bold text-emerald-600 dark:text-emerald-400">最新參考市價 $${stock.price}</span>
+            </div>
+          `;
+          feedbackEl.classList.remove('hidden');
         }
         this.calcBuyTotal();
       }
+    } else {
+      if (feedbackEl) {
+        if (symbol.length >= 4) {
+          feedbackEl.innerHTML = `<span class="text-amber-600 dark:text-amber-400">🔍 搜尋行情中... 若為新上市櫃代號可手動確認名稱</span>`;
+          feedbackEl.classList.remove('hidden');
+          this.fetchOnlineStockInfo(symbol);
+        } else {
+          feedbackEl.classList.add('hidden');
+        }
+      }
+    }
+  }
+
+  async fetchOnlineStockInfo(symbol) {
+    try {
+      const resp = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}.TW?interval=1d&range=1d`);
+      if (resp.ok) {
+        const json = await resp.json();
+        const meta = json?.chart?.result?.[0]?.meta;
+        if (meta && meta.regularMarketPrice) {
+          const currentInput = document.getElementById('buy-symbol')?.value.trim().toUpperCase();
+          if (currentInput === symbol) {
+            const price = meta.regularMarketPrice;
+            const name = meta.shortName || meta.symbol || symbol;
+            document.getElementById('buy-price').value = price;
+            if (!document.getElementById('buy-name').value) {
+              document.getElementById('buy-name').value = name;
+            }
+            const feedbackEl = document.getElementById('buy-symbol-feedback');
+            if (feedbackEl) {
+              feedbackEl.innerHTML = `<span class="text-emerald-600 dark:text-emerald-400 font-semibold">✅ 線上行情：${this.escapeHtml(name)} ‧ 市價 $${price}</span>`;
+              feedbackEl.classList.remove('hidden');
+            }
+            this.calcBuyTotal();
+          }
+        }
+      }
+    } catch (e) {
+      // Background query silent fallback
     }
   }
 
@@ -1338,7 +1413,8 @@ class StockApp {
     const account = this.data.accounts.find(a => a.id === accountId) || { discountRate: 0.6 };
     const holding = this.calculateHoldings().find(h => h.accountId === accountId && h.symbol === symbol);
 
-    const isETF = STOCK_DICTIONARY[symbol]?.isETF || symbol.startsWith('00');
+    const db = window.ALL_TW_STOCKS || STOCK_DICTIONARY;
+    const isETF = (db[symbol]?.isETF) || symbol.startsWith('00') || symbol.includes('B');
     const taxRate = isETF ? 0.001 : 0.003; // ETF 0.1%, Stock 0.3%
 
     const fee = Math.max(20, Math.floor(shares * price * 0.001425 * account.discountRate));
