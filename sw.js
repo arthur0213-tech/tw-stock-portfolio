@@ -1,4 +1,4 @@
-const CACHE_NAME = 'stock-app-cache-v2';
+const CACHE_NAME = 'stock-app-cache-v3';
 
 self.addEventListener('install', event => {
   self.skipWaiting();
@@ -14,7 +14,6 @@ self.addEventListener('activate', event => {
 
 // Network-First strategy: always fetch fresh code from GitHub Pages, fallback to cache when offline
 self.addEventListener('fetch', event => {
-  // Only handle GET requests
   if (event.request.method !== 'GET') return;
 
   event.respondWith(
