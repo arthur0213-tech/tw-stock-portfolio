@@ -119,22 +119,49 @@ class StockApp {
     }
   }
 
-  saveData() {
+  saveData(immediateCloud = true) {
     try {
       this.data.isInitialized = true;
       this.data.updatedAt = Date.now();
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.data));
+      if (this.syncKey) {
+        localStorage.setItem('STOCK_APP_SYNC_KEY', this.syncKey);
+      }
 
-      // 即時自動同步至 Firebase Firestore (防抖動 300ms 快速持久化)
+      // 即時自動同步至 Firebase Firestore (預設立即推送，確保網頁隨時關閉都不遺失)
       if (this.isFirebaseActive && !this.isRemoteUpdate) {
         if (this.syncTimeout) clearTimeout(this.syncTimeout);
-        this.syncTimeout = setTimeout(() => {
+        if (immediateCloud) {
           this.pushToCloud(false);
-        }, 300);
+        } else {
+          this.syncTimeout = setTimeout(() => {
+            this.pushToCloud(false);
+          }, 150);
+        }
       }
     } catch (e) {
       console.error('Failed to save portfolio data:', e);
       alert('本機儲存失敗，請檢查空間！');
+    }
+  }
+
+  /**
+   * 網頁關閉 / 換分頁 / 手機跳出 App / 鎖定螢幕時的即時雙向備份保險機制
+   */
+  flushAndBackup() {
+    try {
+      this.data.isInitialized = true;
+      this.data.updatedAt = Date.now();
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.data));
+      if (this.syncKey) {
+        localStorage.setItem('STOCK_APP_SYNC_KEY', this.syncKey);
+      }
+      if (this.firestoreDb && this.syncKey) {
+        this.firestoreDb.collection('stock_portfolios').doc(this.syncKey).set(this.data)
+          .catch(err => console.warn('Unload cloud backup error:', err));
+      }
+    } catch (e) {
+      console.warn('Flush and backup error:', e);
     }
   }
 
@@ -762,17 +789,17 @@ class StockApp {
         const accPnlColor = this.getPnLColorClass(acc.unrealizedPnL);
         const accPrefix = acc.unrealizedPnL >= 0 ? '+' : '';
         return `
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between py-2 px-3 rounded-xl bg-slate-50 dark:bg-slate-900/40 text-xs gap-2 border border-slate-100 dark:border-slate-800">
-            <div class="flex items-center space-x-2">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between py-2 px-2.5 sm:px-3 rounded-xl bg-slate-50 dark:bg-slate-900/40 text-xs gap-1.5 sm:gap-2 border border-slate-100 dark:border-slate-800">
+            <div class="flex items-center justify-between sm:justify-start space-x-2">
               <span class="font-bold text-slate-700 dark:text-slate-300"><i data-lucide="landmark" class="w-3.5 h-3.5 inline mr-1 text-slate-400"></i>${this.escapeHtml(acc.accountName)}</span>
-              <span class="text-slate-400">均價 $${acc.avgCost.toFixed(1)}</span>
+              <span class="text-slate-400 font-mono">均價 $${acc.avgCost.toFixed(1)}</span>
             </div>
-            <div class="flex flex-wrap items-center gap-3">
+            <div class="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 text-[11px] sm:text-xs">
               <span class="text-emerald-600 dark:text-emerald-400 font-medium">
                 <i data-lucide="check-circle-2" class="w-3 h-3 inline mr-0.5"></i>在庫：${acc.inAccountShares.toLocaleString()} 股
               </span>
               <span class="${acc.lentShares > 0 ? 'text-purple-600 dark:text-purple-400 font-semibold' : 'text-slate-400'}">
-                <i data-lucide="repeat" class="w-3 h-3 inline mr-0.5"></i>出借中：${acc.lentShares.toLocaleString()} 股
+                <i data-lucide="repeat" class="w-3 h-3 inline mr-0.5"></i>出借：${acc.lentShares.toLocaleString()} 股
               </span>
               <span class="font-bold text-slate-900 dark:text-white">${this.formatCurrency(acc.marketValue)}</span>
               <span class="font-semibold ${accPnlColor}">${accPrefix}${this.formatCurrency(acc.unrealizedPnL)} (${accPrefix}${acc.unrealizedPnLRate.toFixed(2)}%)</span>
@@ -782,51 +809,51 @@ class StockApp {
       }).join('');
 
       return `
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden p-4 sm:p-5 space-y-3">
-          <!-- Card Header -->
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-700/60 pb-3">
-            <div class="flex items-center space-x-3">
-              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800 flex flex-col items-center justify-center font-bold">
-                <span class="text-xs text-slate-400">代號</span>
-                <span class="text-sm font-mono text-slate-800 dark:text-white">${s.symbol}</span>
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden p-3.5 sm:p-5 space-y-3">
+          <!-- Card Header (Mobile-First Top Layout) -->
+          <div class="flex items-start justify-between gap-2 border-b border-slate-100 dark:border-slate-700/60 pb-2.5">
+            <div class="flex items-center space-x-2.5 sm:space-x-3 min-w-0">
+              <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800 flex flex-col items-center justify-center font-bold flex-shrink-0 shadow-sm">
+                <span class="text-[9px] sm:text-xs text-slate-400">代號</span>
+                <span class="text-xs sm:text-sm font-mono text-slate-800 dark:text-white">${s.symbol}</span>
               </div>
-              <div>
-                <div class="flex items-center space-x-2">
-                  <h3 class="text-base font-extrabold text-slate-900 dark:text-white">${this.escapeHtml(s.name)}</h3>
-                  <button onclick="app.openEditPriceModal('${s.symbol}', '${s.name}', ${s.currentPrice})" class="text-xs px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 inline-flex items-center space-x-1" title="手動設定目前市價">
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <h3 class="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white truncate">${this.escapeHtml(s.name)}</h3>
+                  <button onclick="app.openEditPriceModal('${s.symbol}', '${s.name}', ${s.currentPrice})" class="text-[11px] sm:text-xs px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 inline-flex items-center space-x-1" title="手動設定目前市價">
                     <i data-lucide="edit-3" class="w-3 h-3"></i>
                     <span>市價 $${s.currentPrice}</span>
                   </button>
                 </div>
-                <p class="text-xs text-slate-400 mt-0.5">平均持有成本 $${s.avgCost.toFixed(2)} ‧ 跨 ${s.accountBreakdown.length} 個券商戶頭</p>
+                <p class="text-[11px] sm:text-xs text-slate-400 mt-0.5 truncate">平均持有成本 $${s.avgCost.toFixed(2)} ‧ 跨 ${s.accountBreakdown.length} 個券商戶頭</p>
               </div>
             </div>
 
-            <!-- Total Value & PnL -->
-            <div class="text-left sm:text-right">
-              <div class="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white">${this.formatCurrency(s.marketValue)}</div>
-              <div class="text-xs font-semibold ${pnlColor}">
+            <!-- Total Value & PnL (Right Aligned) -->
+            <div class="text-right flex-shrink-0">
+              <div class="text-base sm:text-xl font-extrabold text-slate-900 dark:text-white">${this.formatCurrency(s.marketValue)}</div>
+              <div class="text-[11px] sm:text-xs font-semibold ${pnlColor}">
                 未實現：${prefix}${this.formatCurrency(s.unrealizedPnL)} (${prefix}${s.unrealizedPnLRate.toFixed(2)}%)
               </div>
             </div>
           </div>
 
-          <!-- Stock Distribution Stats Pills -->
-          <div class="grid grid-cols-3 gap-2 py-1 text-center text-xs">
-            <div class="p-2 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
-              <span class="text-slate-400 block text-[11px]">總持股數量</span>
-              <span class="font-bold text-slate-800 dark:text-white text-sm">${s.totalShares.toLocaleString()}</span>
-              <span class="text-slate-400 text-[10px]">(${lots} 張)</span>
+          <!-- Stock Distribution Stats Pills (3-col mobile friendly) -->
+          <div class="grid grid-cols-3 gap-1.5 sm:gap-2 py-1 text-center text-xs">
+            <div class="p-1.5 sm:p-2 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+              <span class="text-slate-400 block text-[10px] sm:text-[11px]">總持股數量</span>
+              <span class="font-bold text-slate-800 dark:text-white text-xs sm:text-sm">${s.totalShares.toLocaleString()}</span>
+              <span class="text-slate-400 text-[9px] sm:text-[10px] block sm:inline">(${lots} 張)</span>
             </div>
-            <div class="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-800/40">
-              <span class="text-emerald-700 dark:text-emerald-400 block text-[11px] font-medium">戶頭在庫現股 (可賣)</span>
-              <span class="font-bold text-emerald-600 dark:text-emerald-400 text-sm">${s.inAccountShares.toLocaleString()}</span>
-              <span class="text-emerald-500 text-[10px]">(${inAccountLots} 張)</span>
+            <div class="p-1.5 sm:p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-800/40">
+              <span class="text-emerald-700 dark:text-emerald-400 block text-[10px] sm:text-[11px] font-medium">在庫現股 (可賣)</span>
+              <span class="font-bold text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm">${s.inAccountShares.toLocaleString()}</span>
+              <span class="text-emerald-500 text-[9px] sm:text-[10px] block sm:inline">(${inAccountLots} 張)</span>
             </div>
-            <div class="p-2 rounded-xl ${s.lentShares > 0 ? 'bg-purple-50 dark:bg-purple-950/30 border-purple-100 dark:border-purple-800/40' : 'bg-slate-50 dark:bg-slate-900/50 border-slate-100 dark:border-slate-800'}">
-              <span class="${s.lentShares > 0 ? 'text-purple-700 dark:text-purple-300' : 'text-slate-400'} block text-[11px] font-medium">出借中 (借券收息)</span>
-              <span class="font-bold ${s.lentShares > 0 ? 'text-purple-600 dark:text-purple-400' : 'text-slate-400'} text-sm">${s.lentShares.toLocaleString()}</span>
-              <span class="${s.lentShares > 0 ? 'text-purple-500' : 'text-slate-400'} text-[10px]">(${lentLots} 張)</span>
+            <div class="p-1.5 sm:p-2 rounded-xl ${s.lentShares > 0 ? 'bg-purple-50 dark:bg-purple-950/30 border-purple-100 dark:border-purple-800/40' : 'bg-slate-50 dark:bg-slate-900/50 border-slate-100 dark:border-slate-800'}">
+              <span class="${s.lentShares > 0 ? 'text-purple-700 dark:text-purple-300' : 'text-slate-400'} block text-[10px] sm:text-[11px] font-medium">出借中 (借券收息)</span>
+              <span class="font-bold ${s.lentShares > 0 ? 'text-purple-600 dark:text-purple-400' : 'text-slate-400'} text-xs sm:text-sm">${s.lentShares.toLocaleString()}</span>
+              <span class="${s.lentShares > 0 ? 'text-purple-500' : 'text-slate-400'} text-[9px] sm:text-[10px] block sm:inline">(${lentLots} 張)</span>
             </div>
           </div>
 
@@ -2020,24 +2047,74 @@ class StockApp {
     })[m]);
   }
 
+  /**
+   * 切換分頁（同時支援電腦版頂部 Tab 與手機版底部快捷導覽列）
+   */
+  switchTab(targetId) {
+    const tabs = document.querySelectorAll('.nav-tab');
+    tabs.forEach(tab => {
+      if (tab.dataset.tab === targetId) {
+        tab.classList.add('active-tab', 'border-blue-600', 'text-blue-600', 'dark:text-blue-400');
+        tab.classList.remove('border-transparent', 'text-slate-500');
+      } else {
+        tab.classList.remove('active-tab', 'border-blue-600', 'text-blue-600', 'dark:text-blue-400');
+        tab.classList.add('border-transparent', 'text-slate-500');
+      }
+    });
+
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+    const targetContent = document.getElementById(targetId);
+    if (targetContent) targetContent.classList.remove('hidden');
+
+    // 同步更新手機版底部快捷列的高亮狀態
+    const mobMapping = {
+      'tab-by-stock': 'mob-nav-stock',
+      'tab-by-account': 'mob-nav-account',
+      'tab-lending': 'mob-nav-lending',
+      'tab-transactions': 'mob-nav-tx'
+    };
+    Object.entries(mobMapping).forEach(([tab, btnId]) => {
+      const btn = document.getElementById(btnId);
+      if (btn) {
+        if (tab === targetId) {
+          btn.classList.add('text-blue-600', 'dark:text-blue-400', 'font-bold');
+          btn.classList.remove('text-slate-400', 'dark:text-slate-500');
+        } else {
+          btn.classList.remove('text-blue-600', 'dark:text-blue-400', 'font-bold');
+          btn.classList.add('text-slate-400', 'dark:text-slate-500');
+        }
+      }
+    });
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   setupEventListeners() {
-    // Navigation Tabs
+    // Navigation Tabs (Desktop & Mobile)
     const tabs = document.querySelectorAll('.nav-tab');
     tabs.forEach(tab => {
       tab.addEventListener('click', () => {
-        tabs.forEach(t => {
-          t.classList.remove('active-tab', 'border-blue-600', 'text-blue-600', 'dark:text-blue-400');
-          t.classList.add('border-transparent', 'text-slate-500');
-        });
-        tab.classList.add('active-tab', 'border-blue-600', 'text-blue-600', 'dark:text-blue-400');
-        tab.classList.remove('border-transparent', 'text-slate-500');
-
-        document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
-        const targetId = tab.dataset.tab;
-        const targetContent = document.getElementById(targetId);
-        if (targetContent) targetContent.classList.remove('hidden');
+        this.switchTab(tab.dataset.tab);
       });
     });
+
+    // 關鍵保險：網頁關閉 / 換頁 / 手機跳出 App / 鎖定螢幕時的即時雙向備份保障
+    const doImmediateBackup = () => {
+      console.log('Instant backup triggered by browser lifecycle event');
+      this.flushAndBackup();
+    };
+    // 1. 手機瀏覽器與現代瀏覽器最權威的狀態切換監聽 (App 切到背景 / 鎖定螢幕必觸發)
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') {
+        doImmediateBackup();
+      }
+    });
+    // 2. iOS Safari & Android Chrome 規範的頁面隱藏/離開事件
+    window.addEventListener('pagehide', doImmediateBackup);
+    // 3. 電腦版瀏覽器關閉/重新整理事件
+    window.addEventListener('beforeunload', doImmediateBackup);
+    // 4. Chrome/Safari Page Lifecycle API 凍結事件
+    window.addEventListener('freeze', doImmediateBackup);
 
     // Stock search bar
     const searchInput = document.getElementById('search-stock');
