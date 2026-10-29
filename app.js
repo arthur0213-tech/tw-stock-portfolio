@@ -108,17 +108,11 @@ class StockApp {
         const parsed = JSON.parse(saved);
         this.data = { ...this.data, ...parsed };
       } else {
-        // First time initialization: populate default prices from dictionary
-        Object.entries(STOCK_DICTIONARY).forEach(([sym, info]) => {
-          this.data.prices[sym] = {
-            price: info.defaultPrice,
-            change: 0,
-            changePercent: 0,
-            lastUpdated: new Date().toISOString()
-          };
-        });
-        // Auto-load sample data only on first visit
-        this.populateSampleData();
+        // 初次進入或無本機快取時：以完全乾淨的狀態開始，千萬不要自動塞入範例資料與不要呼叫 saveData！
+        // 將 updatedAt 設為 0，確保連線 Firebase 時必能無條件拉取使用者在雲端的最新真實持股
+        this.data.transactions = [];
+        this.data.lendings = [];
+        this.data.updatedAt = 0;
       }
     } catch (e) {
       console.error('Failed to load portfolio data:', e);
@@ -131,12 +125,12 @@ class StockApp {
       this.data.updatedAt = Date.now();
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.data));
 
-      // Auto-sync to Firebase Firestore if connected
+      // 即時自動同步至 Firebase Firestore (防抖動 300ms 快速持久化)
       if (this.isFirebaseActive && !this.isRemoteUpdate) {
         if (this.syncTimeout) clearTimeout(this.syncTimeout);
         this.syncTimeout = setTimeout(() => {
           this.pushToCloud(false);
-        }, 800);
+        }, 300);
       }
     } catch (e) {
       console.error('Failed to save portfolio data:', e);
@@ -186,10 +180,12 @@ class StockApp {
     this.unsubscribeFirestore = docRef.onSnapshot(doc => {
       if (doc.exists) {
         const remoteData = doc.data();
-        if (remoteData && remoteData.updatedAt) {
-          const localUpdated = this.data.updatedAt || 0;
-          if (remoteData.updatedAt > localUpdated) {
-            console.log('Received remote update from Firebase Firestore!');
+        if (remoteData) {
+          const remoteUpdated = Number(remoteData.updatedAt) || 0;
+          const localUpdated = Number(this.data.updatedAt) || 0;
+          // 若雲端時間較新、或本地從未儲存過 (localUpdated === 0)、或本地目前無交易紀錄，無條件以雲端為準
+          if (remoteUpdated >= localUpdated || localUpdated === 0 || !this.data.transactions || this.data.transactions.length === 0) {
+            console.log('Syncing portfolio from Firebase Firestore (Cloud -> Local)');
             this.isRemoteUpdate = true;
             this.data = { ...this.data, ...remoteData };
             localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.data));
@@ -198,8 +194,10 @@ class StockApp {
           }
         }
       } else {
-        // Document doesn't exist yet on cloud, push initial local data
-        this.pushToCloud(false);
+        // 雲端尚無此 doc 時，僅在本地有真實交易時才推送到雲端
+        if (this.data.transactions && this.data.transactions.length > 0) {
+          this.pushToCloud(false);
+        }
       }
     }, err => {
       console.warn('Firestore onSnapshot listener error:', err);
@@ -267,9 +265,11 @@ class StockApp {
     try {
       const doc = await this.firestoreDb.collection('stock_portfolios').doc(this.syncKey).get();
       if (doc.exists) {
+        this.isRemoteUpdate = true;
         this.data = { ...this.data, ...doc.data() };
-        this.saveData();
+        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.data));
         this.render();
+        this.isRemoteUpdate = false;
         alert('✅ 已成功從 Firebase 雲端下載並覆蓋本地持股！');
       } else {
         alert(`雲端尚無此識別碼 (${this.syncKey}) 的持股資料！您可以先點擊「立即推送到雲端」。`);
