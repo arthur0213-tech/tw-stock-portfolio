@@ -5,31 +5,31 @@
 
 // 常用熱門台股/ETF 代號字典（提供自動帶入名稱與參考市價）
 const STOCK_DICTIONARY = {
-  '2330': { name: '台積電', defaultPrice: 1040.0, isETF: false },
-  '2317': { name: '鴻海', defaultPrice: 215.0, isETF: false },
-  '2454': { name: '聯發科', defaultPrice: 1310.0, isETF: false },
+  '2330': { name: '台積電', defaultPrice: 2415.0, isETF: false },
+  '2317': { name: '鴻海', defaultPrice: 248.0, isETF: false },
+  '2454': { name: '聯發科', defaultPrice: 4235.0, isETF: false },
   '2308': { name: '台達電', defaultPrice: 405.0, isETF: false },
   '2382': { name: '廣達', defaultPrice: 310.0, isETF: false },
   '3231': { name: '緯創', defaultPrice: 118.0, isETF: false },
   '2376': { name: '技嘉', defaultPrice: 275.0, isETF: false },
   '2303': { name: '聯電', defaultPrice: 50.5, isETF: false },
-  '2603': { name: '長榮', defaultPrice: 205.0, isETF: false },
+  '2603': { name: '長榮', defaultPrice: 263.0, isETF: false },
   '2609': { name: '陽明', defaultPrice: 68.0, isETF: false },
-  '2881': { name: '富邦金', defaultPrice: 91.5, isETF: false },
-  '2882': { name: '國泰金', defaultPrice: 68.0, isETF: false },
+  '2881': { name: '富邦金', defaultPrice: 161.0, isETF: false },
+  '2882': { name: '國泰金', defaultPrice: 115.5, isETF: false },
   '2886': { name: '兆豐金', defaultPrice: 39.8, isETF: false },
   '2884': { name: '玉山金', defaultPrice: 28.5, isETF: false },
   '2891': { name: '中信金', defaultPrice: 36.8, isETF: false },
-  '0050': { name: '元大台灣50', defaultPrice: 195.0, isETF: true },
-  '0056': { name: '元大高股息', defaultPrice: 38.2, isETF: true },
-  '00878': { name: '國泰永續高股息', defaultPrice: 22.8, isETF: true },
-  '00919': { name: '群益台灣精選高息', defaultPrice: 23.9, isETF: true },
-  '00929': { name: '復華台灣科技優息', defaultPrice: 19.3, isETF: true },
+  '0050': { name: '元大台灣50', defaultPrice: 107.25, isETF: true },
+  '0056': { name: '元大高股息', defaultPrice: 57.25, isETF: true },
+  '00878': { name: '國泰永續高股息', defaultPrice: 35.3, isETF: true },
+  '00919': { name: '群益台灣精選高息', defaultPrice: 32.9, isETF: true },
+  '00929': { name: '復華台灣科技優息', defaultPrice: 29.15, isETF: true },
   '006208': { name: '富邦台50', defaultPrice: 115.0, isETF: true },
   '00713': { name: '元大台灣高息低波', defaultPrice: 58.5, isETF: true },
-  '00940': { name: '元大台灣價值高息', defaultPrice: 9.6, isETF: true },
-  '00679B': { name: '元大美債20年', defaultPrice: 30.5, isETF: true },
-  '00687B': { name: '國泰20年美債', defaultPrice: 31.8, isETF: true },
+  '00940': { name: '元大台灣價值高息', defaultPrice: 13.47, isETF: true },
+  '00679B': { name: '元大美債20年', defaultPrice: 26.23, isETF: true },
+  '00687B': { name: '國泰20年美債', defaultPrice: 27.27, isETF: true },
 };
 
 class StockApp {
@@ -76,6 +76,11 @@ class StockApp {
     this.initStocksDatalist();
     this.initFirebase();
     this.render();
+
+    // 啟動時自動背景連線更新持股之最新收盤/市價 (不跳通知擾民)
+    setTimeout(() => {
+      this.refreshAllPrices(false);
+    }, 1000);
   }
 
   // 自動填入全台股與ETF datalist (2,397 檔)
@@ -535,9 +540,12 @@ class StockApp {
         const lentShares = activeLentMap[key] || 0;
         const inAccountShares = Math.max(0, item.shares - lentShares);
         
-        // 價格估算
-        const priceInfo = this.data.prices[item.symbol] || { price: item.totalCost / item.shares, change: 0, changePercent: 0 };
-        const currentPrice = Number(priceInfo.price) || 0;
+        // 價格估算：優先使用即時/自訂行情，次之全台股最新收盤資料庫，最後為買進成本
+        const db = window.ALL_TW_STOCKS || STOCK_DICTIONARY;
+        const official = db[item.symbol];
+        const defaultFallbackPrice = (official && official.price > 0) ? official.price : (item.totalCost / item.shares);
+        const priceInfo = this.data.prices[item.symbol] || { price: defaultFallbackPrice, change: 0, changePercent: 0 };
+        const currentPrice = Number(priceInfo.price) > 0 ? Number(priceInfo.price) : defaultFallbackPrice;
         const marketValue = Math.round(item.shares * currentPrice);
         const inAccountValue = Math.round(inAccountShares * currentPrice);
         const lentValue = Math.round(lentShares * currentPrice);
@@ -1212,52 +1220,54 @@ class StockApp {
               <span class="font-bold text-emerald-700 dark:text-emerald-300">
                 ✅ 已辨識：${this.escapeHtml(stock.name)} <span class="text-xs px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/60 ml-1 font-mono">${stock.market || (stock.isETF ? 'ETF' : '台股')}</span>
               </span>
-              <span class="font-mono font-bold text-emerald-600 dark:text-emerald-400">最新參考市價 $${stock.price}</span>
+              <span class="font-mono font-bold text-emerald-600 dark:text-emerald-400">參考市價 $${stock.price}</span>
             </div>
           `;
           feedbackEl.classList.remove('hidden');
         }
         this.calcBuyTotal();
+
+        // 同步連線抓取 FinMind 最新當日/前一日官方收盤與漲跌
+        this.fetchStockPrice(symbol).then(quote => {
+          if (quote && quote.price > 0) {
+            const currentSym = document.getElementById('buy-symbol')?.value.trim().toUpperCase();
+            if (currentSym === symbol) {
+              document.getElementById('buy-price').value = quote.price;
+              this.calcBuyTotal();
+              if (feedbackEl) {
+                const spreadText = quote.change > 0 ? `+${quote.change}` : `${quote.change}`;
+                feedbackEl.innerHTML = `
+                  <div class="flex items-center justify-between">
+                    <span class="font-bold text-emerald-700 dark:text-emerald-300">
+                      ✅ ${this.escapeHtml(stock.name)} (${quote.date} 最新收盤)
+                    </span>
+                    <span class="font-mono font-bold text-emerald-600 dark:text-emerald-400">最新收盤價 $${quote.price} (${spreadText})</span>
+                  </div>
+                `;
+              }
+            }
+          }
+        });
       }
     } else {
       if (feedbackEl) {
         if (symbol.length >= 4) {
-          feedbackEl.innerHTML = `<span class="text-amber-600 dark:text-amber-400">🔍 搜尋行情中... 若為新上市櫃代號可手動確認名稱</span>`;
+          feedbackEl.innerHTML = `<span class="text-amber-600 dark:text-amber-400">🔍 正在連線查價中...</span>`;
           feedbackEl.classList.remove('hidden');
-          this.fetchOnlineStockInfo(symbol);
+          this.fetchStockPrice(symbol).then(quote => {
+            if (quote && quote.price > 0) {
+              const currentSym = document.getElementById('buy-symbol')?.value.trim().toUpperCase();
+              if (currentSym === symbol) {
+                document.getElementById('buy-price').value = quote.price;
+                this.calcBuyTotal();
+                feedbackEl.innerHTML = `<span class="text-emerald-600 dark:text-emerald-400 font-semibold">✅ 已取得最新收盤市價 $${quote.price} (${quote.date})</span>`;
+              }
+            }
+          });
         } else {
           feedbackEl.classList.add('hidden');
         }
       }
-    }
-  }
-
-  async fetchOnlineStockInfo(symbol) {
-    try {
-      const resp = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}.TW?interval=1d&range=1d`);
-      if (resp.ok) {
-        const json = await resp.json();
-        const meta = json?.chart?.result?.[0]?.meta;
-        if (meta && meta.regularMarketPrice) {
-          const currentInput = document.getElementById('buy-symbol')?.value.trim().toUpperCase();
-          if (currentInput === symbol) {
-            const price = meta.regularMarketPrice;
-            const name = meta.shortName || meta.symbol || symbol;
-            document.getElementById('buy-price').value = price;
-            if (!document.getElementById('buy-name').value) {
-              document.getElementById('buy-name').value = name;
-            }
-            const feedbackEl = document.getElementById('buy-symbol-feedback');
-            if (feedbackEl) {
-              feedbackEl.innerHTML = `<span class="text-emerald-600 dark:text-emerald-400 font-semibold">✅ 線上行情：${this.escapeHtml(name)} ‧ 市價 $${price}</span>`;
-              feedbackEl.classList.remove('hidden');
-            }
-            this.calcBuyTotal();
-          }
-        }
-      }
-    } catch (e) {
-      // Background query silent fallback
     }
   }
 
@@ -1711,53 +1721,107 @@ class StockApp {
     }
   }
 
-  async refreshAllPrices() {
+  /**
+   * 取得單一股票/ETF之最新市價 (最新收盤或昨收價)
+   * 1. 優先使用開放 CORS 的 FinMind 官方公開台股報價 API
+   * 2. 次之使用全台股最新收盤資料庫 (window.ALL_TW_STOCKS)
+   */
+  async fetchStockPrice(symbol) {
+    const sym = symbol.trim().toUpperCase();
+    const d = new Date();
+    d.setDate(d.getDate() - 12);
+    const startDate = d.toISOString().slice(0, 10);
+
+    // 1. 查詢 FinMind 即時/當日盤後收盤價 API (含 Access-Control-Allow-Origin: *)
+    try {
+      const resp = await fetch(`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockPrice&data_id=${sym}&start_date=${startDate}`);
+      if (resp.ok) {
+        const json = await resp.json();
+        const records = json.data || [];
+        if (records.length > 0) {
+          const last = records[records.length - 1];
+          const close = Number(last.close) || 0;
+          const spread = Number(last.spread) || 0;
+          const prevClose = close - spread;
+          const changePercent = prevClose > 0 ? (spread / prevClose) * 100 : 0;
+          return {
+            price: close,
+            change: Math.round(spread * 100) / 100,
+            changePercent: Math.round(changePercent * 100) / 100,
+            date: last.date,
+            source: 'FinMind'
+          };
+        }
+      }
+    } catch (e) {
+      console.warn(`FinMind API fetch error for ${sym}:`, e);
+    }
+
+    // 2. 備援：全台股離線完整收盤資料庫 (window.ALL_TW_STOCKS)
+    const db = window.ALL_TW_STOCKS || STOCK_DICTIONARY;
+    if (db && db[sym] && db[sym].price > 0) {
+      return {
+        price: db[sym].price,
+        change: 0,
+        changePercent: 0,
+        date: '最新官方收盤',
+        source: 'TWSE_DB'
+      };
+    }
+
+    return null;
+  }
+
+  async refreshAllPrices(showNotification = true) {
     const btn = document.getElementById('btn-refresh-prices');
-    const originalText = btn.innerHTML;
-    btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i><span>更新中...</span>`;
-    if (window.lucide) lucide.createIcons();
+    const originalText = btn ? btn.innerHTML : '';
+    if (btn) {
+      btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i><span>抓取行情中...</span>`;
+      if (window.lucide) lucide.createIcons();
+    }
 
     const holdings = this.calculateHoldings();
     const symbols = [...new Set(holdings.map(h => h.symbol))];
 
+    if (symbols.length === 0) {
+      if (btn) btn.innerHTML = originalText;
+      if (window.lucide) lucide.createIcons();
+      if (showNotification) alert('目前尚無持股庫存需要更新市價。');
+      return;
+    }
+
     let successCount = 0;
     for (const sym of symbols) {
       try {
-        // Query Yahoo Finance TW quote via open CORS-friendly endpoint
-        // e.g. 2330.TW or 0050.TW
-        const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${sym}.TW?interval=1d&range=1d`);
-        if (response.ok) {
-          const resJson = await response.json();
-          const meta = resJson?.chart?.result?.[0]?.meta;
-          if (meta && meta.regularMarketPrice) {
-            const price = meta.regularMarketPrice;
-            const prevClose = meta.chartPreviousClose || price;
-            const change = price - prevClose;
-            const changePercent = prevClose ? (change / prevClose) * 100 : 0;
-            this.data.prices[sym] = {
-              price: price,
-              change: Math.round(change * 100) / 100,
-              changePercent: Math.round(changePercent * 100) / 100,
-              lastUpdated: new Date().toISOString()
-            };
-            successCount++;
-          }
+        const quote = await this.fetchStockPrice(sym);
+        if (quote && quote.price > 0) {
+          this.data.prices[sym] = {
+            price: quote.price,
+            change: quote.change,
+            changePercent: quote.changePercent,
+            quoteDate: quote.date,
+            lastUpdated: new Date().toISOString()
+          };
+          successCount++;
         }
       } catch (err) {
-        console.warn(`Could not auto-fetch price for ${sym}:`, err);
+        console.warn(`Could not refresh price for ${sym}:`, err);
       }
     }
 
-    btn.innerHTML = originalText;
+    if (btn) btn.innerHTML = originalText;
     if (window.lucide) lucide.createIcons();
 
     if (successCount > 0) {
       this.saveData();
       this.render();
-      alert(`已成功連線更新 ${successCount} 檔股票之最新行情！`);
+      if (showNotification) {
+        alert(`✅ 已成功連線取得 ${successCount} 檔持股之最新收盤/市價！`);
+      }
     } else {
-      // Prompt user with friendly alternative
-      alert('已連線檢驗行情。如因瀏覽器跨網域安全限制未能自動抓取，您可以隨時點選股票卡片旁的「市價」按鈕快速手動修改！');
+      if (showNotification) {
+        alert('連線未能取得遠端行情，系統已為您套用內建最新收盤參考價！您亦可點擊卡片手動微調。');
+      }
     }
   }
 
