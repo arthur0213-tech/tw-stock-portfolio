@@ -545,7 +545,11 @@ class StockApp {
         const official = db[item.symbol];
         const defaultFallbackPrice = (official && official.price > 0) ? official.price : (item.totalCost / item.shares);
         const priceInfo = this.data.prices[item.symbol] || { price: defaultFallbackPrice, change: 0, changePercent: 0 };
-        const currentPrice = Number(priceInfo.price) > 0 ? Number(priceInfo.price) : defaultFallbackPrice;
+        let currentPrice = Number(priceInfo.price) > 0 ? Number(priceInfo.price) : defaultFallbackPrice;
+        // 防呆校正：若舊快取值異常為 1 或 <= 1.01，而官方收盤價高於 1.5，自動套用正確官方收盤價
+        if (currentPrice <= 1.01 && defaultFallbackPrice > 1.5) {
+          currentPrice = defaultFallbackPrice;
+        }
         const marketValue = Math.round(item.shares * currentPrice);
         const inAccountValue = Math.round(inAccountShares * currentPrice);
         const lentValue = Math.round(lentShares * currentPrice);
@@ -1793,7 +1797,19 @@ class StockApp {
     let successCount = 0;
     for (const sym of symbols) {
       try {
-        const quote = await this.fetchStockPrice(sym);
+        let quote = await this.fetchStockPrice(sym);
+        if (!quote || quote.price <= 0) {
+          const db = window.ALL_TW_STOCKS || STOCK_DICTIONARY;
+          if (db[sym] && db[sym].price > 0) {
+            quote = {
+              price: db[sym].price,
+              change: 0,
+              changePercent: 0,
+              date: '最新官方收盤',
+              source: 'TWSE_DB'
+            };
+          }
+        }
         if (quote && quote.price > 0) {
           this.data.prices[sym] = {
             price: quote.price,
