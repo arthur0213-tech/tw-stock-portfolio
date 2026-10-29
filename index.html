@@ -827,17 +827,19 @@
   </div>
 
   <!-- Full Taiwan Stocks & ETF Database (2,397 securities) -->
-  <script src="tw_stocks.js"></script>
+  <script src="tw_stocks.js?v=20261029_v3"></script>
   <!-- Main JavaScript Logic -->
-  <script src="app.js"></script>
+  <script src="app.js?v=20261029_v3"></script>
   <script>
     // Initialize Lucide icons on page load
     lucide.createIcons();
 
-    // Register Service Worker for PWA
+    // Register Service Worker for PWA (Network-First)
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(err => {
+        navigator.serviceWorker.register('./sw.js?v=20261029_v3').then(reg => {
+          if (reg && reg.update) reg.update();
+        }).catch(err => {
           console.log('SW registration skipped:', err);
         });
       });
