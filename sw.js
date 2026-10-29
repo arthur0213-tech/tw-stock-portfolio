@@ -3,6 +3,7 @@ const urlsToCache = [
   './',
   './index.html',
   './app.js',
+  './tw_stocks.js',
   './manifest.json'
 ];
 
