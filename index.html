@@ -418,14 +418,16 @@
 
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">股票代號 * (如 2330)</label>
-            <input type="text" id="buy-symbol" required placeholder="例如 2330 或 0050" oninput="app.onSymbolInput(this.value, 'buy')" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2.5 uppercase font-mono">
+            <label class="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">股票/ETF代號 * (只需輸入編號)</label>
+            <input type="text" id="buy-symbol" list="stocks-datalist" required placeholder="輸入編號 (如 2330, 0050, 8069)" oninput="app.onSymbolInput(this.value, 'buy')" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2.5 uppercase font-mono font-bold text-blue-600">
+            <datalist id="stocks-datalist"></datalist>
           </div>
           <div>
-            <label class="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">股票名稱 *</label>
-            <input type="text" id="buy-name" required placeholder="例如 台積電" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2.5">
+            <label class="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">股票名稱 (自動帶入)</label>
+            <input type="text" id="buy-name" required placeholder="自動帶入名稱" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60 p-2.5 font-bold text-slate-800 dark:text-white">
           </div>
         </div>
+        <div id="buy-symbol-feedback" class="text-xs p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 hidden"></div>
 
         <!-- Shares & Unit Switch -->
         <div>
@@ -824,6 +826,8 @@
     </div>
   </div>
 
+  <!-- Full Taiwan Stocks & ETF Database (2,397 securities) -->
+  <script src="tw_stocks.js"></script>
   <!-- Main JavaScript Logic -->
   <script src="app.js"></script>
   <script>
